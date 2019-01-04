@@ -8,7 +8,7 @@
     "pulp": "pulp --psc-package",
     "repl": "pulp --psc-package repl",
     "postinstall": "psc-package install",
-    "start": "pulp --psc-package --watch browserify --main HackerReader.Main --to public/client.js"
+    "start": "pulp --psc-package --watch browserify --main ExamSearch.Main --to public/client.js"
   },
   "dependencies": {
     "psc-package-bin-simple": "1.0.0",

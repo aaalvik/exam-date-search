@@ -1,18 +1,17 @@
-module HackerReader.Main where
+module ExamSearch.Main where
 
 import Prelude hiding (div)
 
 import Effect (Effect)
 import Effect.Class (liftEffect)
 import CSS (marginBottom, px)
+import ExamSearch.Styles as Styles
 import Effect.Aff (Aff)
 import Effect.Console (log)
 import Data.Array as Array
 import Data.Either (Either(Left,Right))
 import Data.Foldable (for_)
 import Data.Maybe (Maybe(Just, Nothing))
-import HackerReader.HackerNewsApi (Story, fetchHackerNewsStories)
-import HackerReader.Styles as Styles
 import Pux as Pux
 import Pux.DOM.Events (onClick)
 import Pux.DOM.HTML (HTML)
@@ -23,88 +22,55 @@ import Text.Smolder.HTML (div, h1, span)
 import Text.Smolder.Markup (text, (!), (#!))
 
 data Event
-  = LoadFrontPage
-  | SetStories (Array Story)
-  | SetSortBy SortBy
+  = NoOp
 
-data SortBy = ByScore | ByTime
 
 type State =
-  { selectedSort :: SortBy
-  , stories :: Array Story }
+  { searchString :: String
+  , examDate :: Maybe ExamDate 
+  }
+
+type ExamDate = String 
+
 
 foreign import formatTime :: String -> String
 
+
 initialState :: State
 initialState =
-  { selectedSort: ByScore
-  , stories: [] }
+  { searchString: ""
+  , examDate: Nothing 
+  }
+
 
 foldp :: Event -> State -> { state :: State, effects :: Array (Aff (Maybe Event)) }
-foldp (LoadFrontPage) state = { state, effects: [loadHackerNewsStories] }
-foldp (SetStories stories) state = { state: newState, effects: [] }
-  where newState = state { stories = stories }
-foldp (SetSortBy newSort) state = { state: newState, effects: [] }
-  where newState = state { selectedSort = newSort }
+foldp NoOp state = { state, effects: [] }
 
-loadHackerNewsStories :: Aff (Maybe Event)
-loadHackerNewsStories = do
-  storiesResult <- fetchHackerNewsStories
-  case storiesResult of
-    Left errors -> do
-      liftEffect $ log $ "Error decoding JSON: " <> show errors
-      pure Nothing
-    Right stories -> pure $ Just (SetStories stories)
 
 view :: State -> HTML Event
-view {selectedSort, stories} = do
+view {searchString, examDate} = do
   div ! style Styles.header $ do
     h1
-      ! style Styles.headerTitle
-      $ text "Hacker Reader"
-    div ! style Styles.sort $ do
-      div ! style (sortItemStyle ByScore)
-        #! onClick (\_ -> SetSortBy ByScore)
-        $ text "Sort by score"
-      div ! style (sortItemStyle ByTime)
-        #! onClick (\_ -> SetSortBy ByTime)
-        $ text "Sort by date"
-  div ! style Styles.content $ do
-    for_ sortedStories storyItem
-  where
-    sortedStories = Array.sortBy (storySort selectedSort) stories
-    sortItemStyle sort =
-      if isSortSelected selectedSort sort
-         then Styles.selected
-         else Styles.unselected
-      
-isSortSelected :: SortBy -> SortBy -> Boolean
-isSortSelected ByTime ByTime = true
-isSortSelected ByScore ByScore = true
-isSortSelected _ _ = false
+      -- ! style Styles.headerTitle
+      $ text "Eksamenssøk for UiB"
+  div ! style Styles.content $ viewDate examDate
 
-storySort :: SortBy -> Story -> Story -> Ordering
-storySort ByTime {created_at: time1} {created_at: time2} = time2 `compare` time1
-storySort ByScore {points: points1} {points: points2} = points2 `compare` points1
 
-storyItem :: Story -> HTML Event
-storyItem story =
-  div ! style (marginBottom (px 5.0)) ! key story.objectID $ do
-    text story.objectID
-    div do
-      div ! style Styles.points $ text (show story.points <> " points")
-      divider
-      div ! style Styles.date $ text (formatTime story.created_at)
+viewDate :: Maybe ExamDate -> HTML Event 
+viewDate maybeDate =
+  case maybeDate of 
+    Just date -> 
+      div ! style Styles.date $ text date
+    Nothing -> 
+      div ! style Styles.date $ text "___"
 
-divider :: HTML Event
-divider = span ! style Styles.divider $ text "|"
-  
+
 main :: Effect Unit
 main = do
   app <- Pux.start
     { initialState
     , view
     , foldp
-    , inputs: [constant LoadFrontPage]
+    , inputs: []
     }
   renderToDOM "#app" app.markup app.input
