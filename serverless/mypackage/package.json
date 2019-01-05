@@ -1,0 +1,18 @@
+{
+  "name": "mypackage",
+  "version": "1.0.0",
+  "description": "scrape exam dates",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "serverless": "^1.35.1",
+    "serverless-haskell": "^0.8.5"
+  }
+}

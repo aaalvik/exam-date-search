@@ -1,0 +1,12 @@
+service: examsearch
+
+provider: 
+  name: aws
+  runtime: haskell
+
+functions: 
+  getsubject:
+    handler: mypackage.mypackage-exe
+
+plugins: 
+  - serverless-haskell
