@@ -8,7 +8,8 @@ import Text.HTML.Scalpel
 import Control.Applicative
 
 main :: IO ()
-main = lambdaMain handler
+main = print $ scrapeStringLike exampleHtml allSubjects 
+-- main = lambdaMain handler
 
 
   
@@ -22,16 +23,32 @@ handler evt = do
 url = "https://www.uib.no/student/eksamensplan/matnat#v-r-2019"
 
 
-scrapeSubject :: String -> IO (Maybe Subject)
-scrapeSubject searchStr = scrapeURL url subject 
-    where 
+data Subject = Subject 
+    { title :: String 
+    --, date :: String
+    } deriving Show
+
+
+
+-- allSubjects :: Scraper String [Subject]
+allSubjects :: Scraper String [Subject]
+allSubjects = 
+    chroot ("div" @: ["id" @= "v-r-2019"]) $ 
+        chroot ("div" @: [hasClass "ui-accordion-content"]) $
+            chroot ("div" @: [hasClass "item-list"]) $
+                chroots "li" subject
+    where     
         subject :: Scraper String Subject 
-        subject = do 
-            date <- text $ "span" @: [hasClass "date"] -- TODO FIX
-            return $ Subject "TEST"
+        subject = do
+            title <- getTitle
+            -- typeOfExam <- ...
+            -- date <- chroot ("dl" @: [hasClass "uib-study-exam-assessment"]) $ text "dd"
+            return $ Subject title -- date
 
-
-data Subject = Subject { name :: String }
+        getTitle :: Scraper String String 
+        getTitle = do 
+            chroot ("h3" @: [hasClass "exam-list-title"]) $
+                text "a"
 
 
 exampleHtml :: String
@@ -42,13 +59,13 @@ exampleHtml = "<html>\
 \                <div class='item-list'>\
 \                    <ul class='faculty-exam-list'>\
 \                        <li>\
-\                            <h3 class='exam-list-title>\
+\                            <h3 class='exam-list-title'>\
 \                                <a>INF122</a>\
 \                                Funksjonell programmering\
 \                            </h3>\
 \                        </li>\
 \                        <li>\
-\                            <h3 class='exam-list-title>\
+\                            <h3 class='exam-list-title'>\
 \                                <a>INF220</a>\
 \                                Programspesifikasjon\
 \                            </h3>\
